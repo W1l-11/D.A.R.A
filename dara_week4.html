@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D.A.R.A — Penasihat Investasi Cerdas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <link rel="stylesheet" href="dara_week4.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="logo-mark">
+      <div class="logo-icon">DA</div>
+      <div>
+        <div class="logo-text">D.A.R.A</div>
+        <div class="logo-sub">Dynamic Adaptive Risk Advisor</div>
+      </div>
+    </div>
+    <span class="ojk-pill">&#128274; Sandbox OJK</span><div class="conn-pill">
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-label">Menghubungkan...</span>
+    </div>
+  </header>
+
+
+  <!-- OJK Disclaimer -->
+  <div class="ojk-box">
+    <span class="ojk-icon">&#128274;</span>
+    <div class="ojk-text">
+      <strong>Penting:</strong> D.A.R.A adalah alat bantu pengambilan keputusan (<em>decision-support tool</em>), bukan layanan investasi berlisensi OJK.
+      Rekomendasi dihasilkan oleh algoritma AI dan <strong>bukan merupakan saran investasi resmi</strong>.
+      Selalu konsultasikan keputusan investasi Anda dengan perencana keuangan berlisensi. Investasi mengandung risiko kehilangan modal.
+    </div>
+  </div>
+
+  <!-- Impact Banner -->
+  <div class="impact-banner">
+    <div>
+      <div class="impact-eyebrow">Hackathon Dig Daya × Penguatan Ketahanan Keuangan</div>
+      <div class="impact-headline">Manajemen Risiko Institusional<br>untuk 12,7 Juta Investor Ritel Indonesia</div>
+      <div class="impact-sub">85% investor ritel belum memiliki strategi risiko. D.A.R.A menggabungkan GARCH, FinBERT &amp; HRP menjadi rekomendasi yang mudah dipahami siapa saja.</div>
+    </div>
+    <div class="impact-stats">
+      <div class="impact-stat">
+        <div class="impact-num" id="bt-vol-reduction" class="impact-num">69%</div>
+        <div class="impact-lbl">Reduksi<br>Volatilitas*</div>
+      </div>
+      <div class="impact-stat">
+        <div class="impact-num" id="bt-crisis-protect" class="impact-num">+6pp</div>
+        <div class="impact-lbl">Proteksi<br>saat Krisis*</div>
+      </div>
+      <div class="impact-stat">
+        <div class="impact-num" class="impact-num">AI</div>
+        <div class="impact-lbl">Sentimen<br>Real-time</div>
+      </div>
+    </div>
+  </div>
+  <div class="error-banner" id="error-banner">
+    Server offline. Menampilkan data simulasi. Jalankan <code>python dara_server.py</code> untuk data live.
+  </div>
+
+  <!-- ══ STEP 1: PROFIL INVESTOR ══ -->
+  <div class="profile-section">
+    <div class="section-label">Langkah 1 — Profil Investasi Anda</div>
+    <div class="profile-grid">
+
+      <!-- Capital slider -->
+      <div class="profile-card">
+        <div class="profile-card-title">Berapa modal yang ingin Anda kelola?</div>
+        <div class="capital-display" id="capital-display">Rp 50.000.000</div>
+        <div class="capital-sub">Geser untuk menyesuaikan</div>
+        <input type="range" id="capital-slider" min="0" max="100" value="42" step="1" oninput="onCapitalChange(this.value)">
+        <div class="slider-ticks">
+          <span>Rp 1 Jt</span><span>Rp 10 Jt</span><span>Rp 100 Jt</span><span>Rp 1 M</span>
+        </div>
+      </div>
+
+      <!-- Goal cards -->
+      <div class="profile-card">
+        <div class="profile-card-title">Apa tujuan investasi Anda?</div>
+        <div class="goal-grid">
+          <div class="goal-card" id="goal-emergency" onclick="setGoal('emergency')">
+            <div class="goal-icon">🛡️</div>
+            <div class="goal-name">Dana Darurat</div>
+            <div class="goal-horizon">3–12 bulan</div>
+          </div>
+          <div class="goal-card active" id="goal-education" onclick="setGoal('education')">
+            <div class="goal-icon">🎓</div>
+            <div class="goal-name">Pendidikan</div>
+            <div class="goal-horizon">5–10 tahun</div>
+          </div>
+          <div class="goal-card" id="goal-retirement" onclick="setGoal('retirement')">
+            <div class="goal-icon">🏡</div>
+            <div class="goal-name">Pensiun</div>
+            <div class="goal-horizon">15–30 tahun</div>
+          </div>
+          <div class="goal-card" id="goal-growth" onclick="setGoal('growth')">
+            <div class="goal-icon">📈</div>
+            <div class="goal-name">Pertumbuhan</div>
+            <div class="goal-horizon">Jangka panjang</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: CUACA PASAR ══ -->
+  <div class="section-label">Langkah 2 — Cuaca Pasar Hari Ini</div>
+  <div class="weather-hero weather-cloudy" id="weather-hero">
+    <div class="weather-bg"></div>
+    <div class="weather-rings">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="ring ring-4"></div>
+    </div>
+    <div class="weather-content">
+      <div class="weather-eyebrow">Kondisi Pasar Saat Ini</div>
+      <span class="weather-emoji" id="weather-emoji">⛅</span>
+      <div class="weather-headline" id="weather-headline">Memuat kondisi pasar...</div>
+      <div class="weather-sub" id="weather-sub">Menganalisis data volatilitas dan sentimen...</div>
+      <div class="weather-pills" id="weather-pills"></div>
+    </div>
+    <div class="risk-gauge-wrap">
+      <div class="risk-gauge-num" id="gauge-num">—</div>
+      <div class="risk-gauge-label">Indeks Risiko</div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: DASHBOARD RITEL ══ -->
+  <div class="section-label">Langkah 3 — Rekomendasi untuk Anda</div>
+  <div class="dual-grid">
+
+    <!-- Left: CVaR + Advice -->
+    <div>
+      <div class="cvar-card">
+        <div class="cvar-eyebrow">⚠ Potensi Kerugian Maksimal</div>
+        <div class="cvar-amount skeleton" id="cvar-amount" style="height:36px;width:200px;margin-bottom:6px">&nbsp;</div>
+        <div class="cvar-sub" id="cvar-sub">dalam satu hari perdagangan buruk (CVaR 95%)</div>
+        <div class="cvar-bar-wrap">
+          <div class="cvar-bar-label">
+            <span>Porsi Modal</span>
+            <span id="cvar-pct-label">—</span>
+          </div>
+          <div class="cvar-bar-track">
+            <div class="cvar-bar-fill" id="cvar-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-advice-card">
+        <div class="ai-advice-eyebrow">💡 Saran D.A.R.A</div>
+        <div class="ai-advice-text skeleton" id="advice-text" style="height:60px;border-radius:6px">&nbsp;</div>
+      </div>
+
+      <!-- Headlines -->
+      <div style="margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem 1.5rem">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:.75rem">Berita &amp; Sentimen Pasar</div>
+        <div id="news-list">
+          <div class="skeleton" style="height:36px;margin:6px 0;border-radius:6px"></div>
+          <div class="skeleton" style="height:36px;margin:6px 0;border-radius:6px"></div>
+          <div class="skeleton" style="height:36px;margin:6px 0;border-radius:6px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Allocation donut + fund list -->
+    <div>
+      <div class="alloc-card">
+        <div class="alloc-title">Alokasi Reksa Dana yang Disarankan</div>
+        <div class="donut-wrap">
+          <canvas id="donutChart"></canvas>
+          <div class="donut-center">
+            <div class="donut-pct" id="donut-vol">—</div>
+            <div class="donut-lbl">Risiko/thn</div>
+          </div>
+        </div>
+        <div class="fund-list" id="fund-list">
+          <div class="skeleton" style="height:18px;margin:4px 0"></div>
+          <div class="skeleton" style="height:18px;margin:4px 0"></div>
+          <div class="skeleton" style="height:18px;margin:4px 0"></div>
+          <div class="skeleton" style="height:18px;margin:4px 0"></div>
+          <div class="skeleton" style="height:18px;margin:4px 0"></div>
+        </div>
+      </div>
+
+      <!-- Capital breakdown -->
+      <div style="margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem 1.5rem">
+        <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:.75rem">Rincian Modal Anda</div>
+        <div id="capital-breakdown">
+          <div class="skeleton" style="height:16px;margin:6px 0"></div>
+          <div class="skeleton" style="height:16px;margin:6px 0"></div>
+          <div class="skeleton" style="height:16px;margin:6px 0"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ QUANT PANEL — FOR JURY ══ -->
+  <button class="quant-toggle-btn" onclick="toggleQuant()" id="quant-btn">
+    <span>🔬</span>
+    <span>Tampilkan Analisis Quant</span>
+    <span class="quant-badge">UNTUK JURI</span>
+    <span id="quant-arrow">▼</span>
+  </button>
+
+  <div class="quant-panel" id="quant-panel">
+    <div class="qtabs">
+      <button onclick="switchTab('signals')" id="tab-signals" style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;background:var(--bg-primary);color:var(--text-primary);font-family:var(--font)">Sinyal &amp; Model</button>
+      <button onclick="switchTab('backtest')" id="tab-backtest" style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:var(--font)">Backtesting Historis</button>
+      <button onclick="switchTab('risk')" id="tab-risk" style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:var(--font)">Metrik Risiko</button>
+    </div>
+    <div id="tc-signals">
+    <div class="section-label" class="mb-lg">Analisis Teknikal — Under the Hood</div>
+    <div class="quant-grid">
+
+      <!-- GARCH chart -->
+      <div>
+        <div class="quant-section-title">
+          Volatilitas GARCH(1,1) <span class="quant-tag">12 BULAN TERAKHIR</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="garchChart"></canvas>
+        </div>
+        <table class="metrics-table" class="mt-sm">
+          <tr><td class="metric-label">Parameter α (ARCH)</td><td id="q-alpha">0.10</td></tr>
+          <tr><td class="metric-label">Parameter β (GARCH)</td><td id="q-beta">0.85</td></tr>
+          <tr><td class="metric-label">Persistence (α+β)</td><td id="q-persist">0.950</td></tr>
+          <tr><td class="metric-label">Half-life Volatilitas</td><td id="q-halflife">14 hari</td></tr>
+          <tr><td class="metric-label">CVaR 95% (harian)</td><td id="q-cvar95">—</td></tr>
+          <tr><td class="metric-label">CVaR 99% (harian)</td><td id="q-cvar99">—</td></tr>
+        </table>
+      </div>
+
+      <!-- FinBERT + Signals -->
+      <div>
+        <div class="quant-section-title">
+          Sentimen FinBERT + GMM <span class="quant-tag">NLP ANALYSIS</span>
+        </div>
+        <div class="finbert-row">
+          <div class="finbert-pos" id="fb-pos" style="flex:30">30%</div>
+          <div class="finbert-neu" id="fb-neu" style="flex:40">40%</div>
+          <div class="finbert-neg" id="fb-neg" style="flex:30">30%</div>
+        </div>
+        <div class="finbert-legend">
+          <span><span class="fl-dot" style="background:#2ECC71"></span>Positif</span>
+          <span><span class="fl-dot" style="background:#95A5A6"></span>Netral</span>
+          <span><span class="fl-dot" style="background:#E74C3C"></span>Negatif</span>
+        </div>
+
+        <div class="q-inner">
+          <div class="quant-section-title" class="mb-sm">
+            Sinyal Multi-Faktor <span class="quant-tag">BOBOT</span>
+          </div>
+          <div class="signal-bars" id="signal-bars">
+            <div style="height:80px" class="skeleton"></div>
+          </div>
+        </div>
+
+        <div class="q-inner">
+          <div class="quant-section-title">HRP Optimizer</div>
+          <table class="metrics-table">
+            <tr><td class="metric-label">Metode Optimasi</td><td>Hierarchical Risk Parity</td></tr>
+            <tr><td class="metric-label">Linkage Method</td><td>Ward</td></tr>
+            <tr><td class="metric-label">Volatilitas Portfolio</td><td id="q-pvol">—</td></tr>
+            <tr><td class="metric-label">Regime Saat Ini</td><td id="q-regime">—</td></tr>
+            <tr><td class="metric-label">Regime Score</td><td id="q-score">—</td></tr>
+            <tr><td class="metric-label">Sumber Sentimen</td><td id="q-source">—</td></tr>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="text-align:center;padding-top:1rem;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">
+    D.A.R.A &mdash; Dynamic Adaptive Risk Advisor &copy; 2025 &nbsp;&bull;&nbsp;
+    GARCH(1,1) | FinBERT GMM | Hierarchical Risk Parity &nbsp;&bull;&nbsp;
+    Bukan saran investasi resmi
+  </div>
+
+</div>
+  <script src="dara_week4.js"></script>
+</body>
+</html>
