@@ -240,7 +240,9 @@ def _background_worker():
 _bg_thread = threading.Thread(target=_background_worker, daemon=True)
 
 # ── Flask app ──────────────────────────────────────────────────────────────────
-app = Flask(__name__, static_folder=".")
+# static_url_path="" agar file statis di-serve langsung dari root URL
+# Contoh: dara_week4.css → http://localhost:5000/dara_week4.css
+app = Flask(__name__, static_folder=".", static_url_path="")
 
 @app.after_request
 def _cors(r):
@@ -252,12 +254,15 @@ def _cors(r):
 @app.route("/")
 def index():
     f = "dara_week4.html"
-    return send_from_directory(".", f) if os.path.exists(f) else ("<h2>dara_week4.html tidak ditemukan.</h2>", 404)
+    return send_from_directory(".", f) if os.path.exists(f) else (
+        "<h2>dara_week4.html tidak ditemukan di folder ini.</h2>"
+        "<p>Pastikan semua file D.A.R.A berada dalam satu folder.</p>", 404)
 
 @app.route("/classic")
 def classic():
     f = "dara_dashboard.html"
-    return send_from_directory(".", f) if os.path.exists(f) else ("<h2>dara_dashboard.html tidak ditemukan.</h2>", 404)
+    return send_from_directory(".", f) if os.path.exists(f) else (
+        "<h2>dara_dashboard.html tidak ditemukan.</h2>", 404)
 
 # ── SSE REAL-TIME STREAM ───────────────────────────────────────────────────────
 @app.route("/api/stream")
