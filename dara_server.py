@@ -1,41 +1,3 @@
-"""
-D.A.R.A — dara_server.py  v3.1  [FIXED]
-=========================================
-Real-time tanpa refresh via Server-Sent Events (SSE).
-
-FIXES APPLIED:
-  [F-S1] Background thread (_bg_thread) now starts at module level, not only inside
-         __main__. When deployed via gunicorn/uWSGI the thread would never start before.
-  [F-S2] _sse_broadcast() now builds a per-client-scenario payload instead of always
-         broadcasting the single stale _current_scenario to ALL connected clients.
-  [F-S3] SENT_TTL unified to 1800 s (30 min) to match SentimentBridge.CACHE_TTL.
-         Previously server said "fresh for 24 h" while the file cache expired every 30 min,
-         causing silent FinBERT re-runs without the server knowing.
-  [F-S4] Removed dead _last_broadcast_ts variable (declared, never read or updated).
-  [F-S5] _sse_clients type annotation corrected to list[tuple[queue.Queue, str]].
-  [F-S6] warmup + cache init now runs regardless of __main__ so gunicorn deployments
-         also start with a valid stub cache (no KeyError on first request).
-
-Alur Data:
-  keyword_discovery.py  →  query_keywords.json  (harian/manual)
-  sentiment_analysis.py →  sentiment_output_signal.json  (per 30 menit)
-  dara_week3.py         →  run_pipeline()
-  /api/stream           →  SSE push ke browser (per 30 detik)
-  dara_week4.html       →  EventSource auto-update
-
-Endpoints:
-  GET /                       → UI Ritel (dara_week4.html)
-  GET /classic                → UI Teknikal (dara_dashboard.html)
-  GET /api/stream             → SSE stream (REAL-TIME)
-  GET /api/analyze?scenario=X → One-shot JSON
-  GET /api/backtest           → Simulasi historis
-  GET /api/health             → Status semua komponen
-  GET /api/sensitivity        → Semua skenario
-  GET /api/refresh-sentiment  → Paksa refresh FinBERT + keywords
-  GET /api/refresh-keywords   → Paksa refresh keywords saja
-  GET /api/sentiment-status   → Status cache
-"""
-
 import os, json, time, traceback, logging, threading, queue, numpy as np
 from datetime import datetime
 from flask import Flask, jsonify, request, send_from_directory, Response, stream_with_context
@@ -47,7 +9,6 @@ logging.basicConfig(level=logging.INFO,
                     datefmt="%H:%M:%S")
 log = logging.getLogger(__name__)
 
-# ── Engine imports ─────────────────────────────────────────────────────────────
 ENGINE_OK = False
 try:
     from dara_week3 import (
@@ -59,9 +20,9 @@ try:
         _GARCH_PERSIST, _GARCH_HALFLIFE, _GARCH_SERIES,
     )
     ENGINE_OK = True
-    log.info("✅ Engine dara_week3 berhasil diimpor")
+    log.info("✅ Engine rekomendasi berhasil diimpor")
 except Exception as e:
-    log.error("❌ Gagal impor dara_week3: %s", e)
+    log.error("❌ Gagal impor data rekomendasi: %s", e)
 
 if ENGINE_OK:
     _clf      = RiskRegimeClassifier()
@@ -71,17 +32,11 @@ if ENGINE_OK:
     _CORR_R   = compute_correlation_regime(df_returns)
     log.info("Sinyal statis: GARCH=%.3f  Mom=%.3f  Corr=%.3f", _GARCH_N, _MOMENTUM, _CORR_R)
 
-# ── Sentiment cache ─────────────────────────────────────────────────────────────
 _sent_cache: dict  = {}
 _sent_ts   : float = 0.0
 
-# [F-S3] Unified TTL: 1800 s = 30 min, matching SentimentBridge.CACHE_TTL.
-# Previously this was 86400 (24 h) while SentimentBridge expired the file every 30 min,
-# causing the server to believe the cache was still "fresh" when it was actually stale.
 SENT_TTL = 1800
 
-
-# Scenario bias: seberapa jauh skenario ini menyimpang dari kondisi nyata
 _SCENARIO_BIAS = {
     "crisis":   -0.55,   # jauh lebih negatif dari kondisi nyata
     "bearish":  -0.25,   # lebih negatif
@@ -91,30 +46,21 @@ _SCENARIO_BIAS = {
 }
 
 def _get_sentiment(sc: str) -> dict:
-    """
-    Kembalikan sentimen yang BERBEDA per skenario.
-    Jika ada live data: blend nilai nyata dengan scenario bias.
-    Jika tidak ada live data: pakai stub skenario.
-    """
     global _sent_cache, _sent_ts
     stub = get_finbert_sentiment_stub(sc)
     if not _sent_cache:
         return stub
 
-    # Ambil live entry (moderate = kondisi nyata)
     live_entry = _sent_cache.get("moderate") or _sent_cache.get(sc)
     if not live_entry or not live_entry.get("_signal"):
         return stub
 
-    # Blend live score dengan scenario bias
     live_score = float(live_entry["market"])
     bias       = _SCENARIO_BIAS.get(sc, 0.0)
     blended    = float(max(-1., min(1., live_score * 0.5 + bias)))
 
-    # Ambil headline dari stub (scenario-specific) tapi gunakan score blended
     headlines = stub.get("headlines", [])
 
-    # Tambahkan konteks live jika tersedia
     sig   = live_entry.get("_signal", {})
     total = sig.get("n_articles_total", 0)
     if total > 0:
@@ -135,7 +81,6 @@ def _get_sentiment(sc: str) -> dict:
         "headlines": headlines,
         "_signal":   live_entry.get("_signal", {}),
     }
-
 
 def _refresh_sentiment(force: bool = False) -> bool:
     global _sent_cache, _sent_ts
@@ -179,27 +124,18 @@ def _refresh_sentiment(force: bool = False) -> bool:
         _sent_ts = time.time()
         return False
 
-
-# ── SSE broadcast queue ────────────────────────────────────────────────────────
-# [F-S5] Corrected type annotation — list of (queue, scenario) tuples
 _sse_clients: list[tuple[queue.Queue, str]] = []
 _sse_lock = threading.Lock()
 
 
 def _safe_put(q: queue.Queue, msg: str) -> bool:
-    """Return False if queue is full (client likely dead / disconnected)."""
     try:
         q.put_nowait(msg)
         return True
     except queue.Full:
         return False
 
-
-# [F-S2] Fixed: was always broadcasting one single scenario payload to all clients.
-# Now builds a per-client-scenario payload so each connected client gets the data
-# matching the scenario they subscribed to.
 def _sse_broadcast_per_scenario() -> None:
-    """Push a fresh per-scenario payload to every connected SSE client."""
     if not ENGINE_OK:
         return
     with _sse_lock:
@@ -356,24 +292,15 @@ def _build_payload(scenario: str = "moderate", use_live: bool = True) -> dict:
         "sentiment_meta": sent_meta,
     }
 
-
-# ── Background thread: refresh & broadcast tiap 30 detik ──────────────────────
-# [F-S4] Removed dead _last_broadcast_ts variable (was declared, never read or updated).
-
 def _background_worker():
-    """
-    Thread background: broadcast ke setiap SSE client per 30 detik.
-    Auto-refresh sentiment setiap SENT_TTL detik (30 menit).
-    """
     global _sent_ts
     while True:
         try:
-            # Auto-refresh sentiment jika cache kedaluwarsa
+
             if ENGINE_OK and (time.time() - _sent_ts) > SENT_TTL:
                 log.info("Cache kedaluwarsa — auto-refresh sentiment...")
                 _refresh_sentiment(force=True)
 
-            # [F-S2] Per-scenario broadcast
             if ENGINE_OK and _sse_clients:
                 _sse_broadcast_per_scenario()
 
@@ -385,8 +312,6 @@ def _background_worker():
 
 _bg_thread = threading.Thread(target=_background_worker, daemon=True)
 
-# ── [F-S6] Module-level cache init: runs for both direct + gunicorn deployments ──
-# Populate stub cache immediately so the first request never hits a KeyError.
 if ENGINE_OK:
     try:
         _sent_cache.update({sc: get_finbert_sentiment_stub(sc)
@@ -396,14 +321,10 @@ if ENGINE_OK:
     except Exception as _e:
         log.warning("Module-level cache init failed: %s", _e)
 
-# [F-S1] Start background thread at module level.
-# Previously this was inside if __name__ == "__main__", so gunicorn deployments
-# never had an SSE broadcast thread running at all.
 if not _bg_thread.is_alive():
     _bg_thread.start()
     log.info("Background SSE thread started (broadcast interval: 30s)")
 
-# ── Flask app ──────────────────────────────────────────────────────────────────
 app = Flask(__name__, static_folder=".", static_url_path="")
 
 
@@ -429,14 +350,8 @@ def classic():
     return send_from_directory(".", f) if os.path.exists(f) else (
         "<h2>dara_dashboard.html tidak ditemukan.</h2>", 404)
 
-
-# ── SSE REAL-TIME STREAM ───────────────────────────────────────────────────────
 @app.route("/api/stream")
 def stream():
-    """
-    Server-Sent Events endpoint — Thread-safe per-client.
-    Browser: const ev = new EventSource('/api/stream?scenario=moderate')
-    """
     scenario = request.args.get("scenario", "moderate")
     if scenario not in ["crisis", "bearish", "moderate", "bullish", "euphoria"]:
         scenario = "moderate"
@@ -473,8 +388,6 @@ def stream():
         headers={"X-Accel-Buffering": "no", "Connection": "keep-alive"},
     )
 
-
-# ── /api/analyze (one-shot) ────────────────────────────────────────────────────
 @app.route("/api/analyze")
 def analyze():
     if not ENGINE_OK:
@@ -489,26 +402,18 @@ def analyze():
         traceback.print_exc()
         return jsonify({"error": str(exc)}), 500
 
-
-# ── /api/backtest ──────────────────────────────────────────────────────────────
 @app.route("/api/backtest")
 def backtest():
-    """
-    Backtest historis DARA vs IHSG.
-    Parameter scenario mengubah intensitas krisis/euforia dalam simulasi
-    sehingga tampilan berbeda per pilihan tujuan investasi.
-    """
     if not ENGINE_OK:
         return jsonify({"error": "Engine tidak tersedia"}), 500
 
     scenario = request.args.get("scenario", "moderate")
-    # Multiplier per skenario: mempengaruhi volatilitas simulasi krisis
     CRISIS_MULT = {
         "crisis":   2.2,   # krisis sangat dalam
         "bearish":  1.5,   # pasar lesu
         "moderate": 1.0,   # normal
-        "bullish":  0.7,   # pasar positif = krisis lebih ringan
-        "euphoria": 0.4,   # euforia = hampir tidak ada krisis
+        "bullish":  0.7,   # krisis lebih ringan
+        "euphoria": 0.4,   # hampir tidak ada krisis
     }
     mult = CRISIS_MULT.get(scenario, 1.0)
 
@@ -528,7 +433,6 @@ def backtest():
             cr = compute_correlation_regime(w)
             mz = float((w["IHSG (Saham)"].mean() - ret3["IHSG (Saham)"].mean())
                        / (ret3["IHSG (Saham)"].std() + 1e-9))
-            # Sentiment scenario bias mempengaruhi regime (lebih defensif saat bearish/crisis)
             bias = _SCENARIO_BIAS.get(scenario, 0.0)
             ri = clf2.classify(gn, bias, mz, cr)
             rg = ri["regime"]
@@ -546,14 +450,12 @@ def backtest():
         idx2 = list(range(60, N, step))
         dates = [ret3.index[i].strftime("%Y-%m-%d") for i in idx2]
 
-        # Krisis window diintensifikasi sesuai scenario
         cs, ce = 200, 260
         ihsg_cr_raw = float(ic[ce] / ic[cs] - 1)
-        ihsg_cr = ihsg_cr_raw * mult          # lebih dalam saat crisis scenario
+        ihsg_cr = ihsg_cr_raw * mult
         dara_cr_raw = float((1 + dara[cs:ce+1]).cumprod()[-1] - 1)
-        dara_cr = dara_cr_raw * (1 + (mult - 1) * 0.3)  # DARA juga terpengaruh tapi lebih sedikit
+        dara_cr = dara_cr_raw * (1 + (mult - 1) * 0.3)
 
-        # OOS split
         split      = int(N * 0.70)
         oos_ihsg   = ihsg[split:]
         oos_dara   = dara[split:]
@@ -617,8 +519,6 @@ def health():
         "keywords_count":      kw_count,
     })
 
-
-# ── /api/sensitivity ───────────────────────────────────────────────────────────
 @app.route("/api/sensitivity")
 def sensitivity():
     if not ENGINE_OK:
@@ -633,15 +533,12 @@ def sensitivity():
                          "alloc": {a: round(w[a] * 100, 1) for a in ASSET_NAMES}})
     return jsonify(results)
 
-
-# ── /api/refresh-sentiment ─────────────────────────────────────────────────────
 @app.route("/api/refresh-sentiment")
 def refresh_route():
     if not ENGINE_OK:
         return jsonify({"error": "Engine tidak tersedia"}), 500
     ok  = _refresh_sentiment(force=True)
     raw = _sent_cache.get("moderate", {}).get("_signal", {})
-    # [F-S2] Broadcast per-scenario after refresh (was broadcasting single scenario to all)
     if ok and ENGINE_OK:
         try:
             _sse_broadcast_per_scenario()
@@ -655,8 +552,6 @@ def refresh_route():
         "n_articles":     raw.get("n_articles_total", 0),
     })
 
-
-# ── /api/refresh-keywords ──────────────────────────────────────────────────────
 @app.route("/api/refresh-keywords")
 def refresh_keywords():
     try:
@@ -671,7 +566,6 @@ def refresh_keywords():
                         "message": "Gagal refresh keywords — cek NEWS_API_KEY"}), 500
 
 
-# ── /api/sentiment-status ──────────────────────────────────────────────────────
 @app.route("/api/sentiment-status")
 def sent_status():
     age = time.time() - _sent_ts
@@ -716,5 +610,4 @@ if __name__ == "__main__":
         log.info("✅ FinBERT loaded and cached for %d minutes", SENT_TTL // 60)
 
     threading.Thread(target=_warmup, daemon=True).start()
-    # _bg_thread already started at module level above
     app.run(debug=False, port=5000, threaded=True, use_reloader=False)

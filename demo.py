@@ -1,16 +1,3 @@
-"""
-D.A.R.A — demo.py
-==================
-Script demo satu-klik untuk presentasi Hackathon Dig Daya.
-Jalankan: python demo.py
-
-Menampilkan:
-  1. Ringkasan sistem D.A.R.A
-  2. Output semua 5 skenario
-  3. Angka backtesting
-  4. Instruksi membuka browser
-"""
-
 import sys, time
 
 def separator(char="─", n=65):
@@ -20,7 +7,6 @@ def header():
     print()
     separator("═")
     print("  D.A.R.A — Dynamic Adaptive Risk Advisor")
-    print("  Hackathon Dig Daya × Penguatan Ketahanan Keuangan")
     separator("═")
     print()
 
@@ -37,19 +23,17 @@ def progress(msg, delay=0.05):
         print(".", end="", flush=True)
     print(" ✅")
 
-# ── Main demo ──────────────────────────────────────────────────────────────────
 header()
 
-# Step 1: Import check
 section("LANGKAH 1 — Memuat Engine")
 try:
-    progress("Memuat dara_week1 (GARCH + CVaR)")
+    progress("Memuat GARCH + CVaR")
     import dara_week1 as w1
     print(f"     Assets   : {w1.ASSETS_AVAILABLE}")
     print(f"     Data     : {'Live (Yahoo Finance)' if w1.LIVE_DATA else 'Simulasi historis 5 tahun'}")
     print(f"     Shape    : {w1.df_returns.shape[0]} hari × {w1.df_returns.shape[1]} aset")
 
-    progress("Memuat dara_week3 (Regime Classifier + HRP)")
+    progress("Memuat Regime Classifier + HRP")
     import dara_week3 as w3
     print(f"     5 Aset   : {w3.ASSET_NAMES}")
     print(f"     GARCH    : persistence={w3._GARCH_PERSIST:.3f}  half-life={w3._GARCH_HALFLIFE:.0f} hari")
@@ -60,8 +44,7 @@ except Exception as e:
     print("  Pastikan semua file ada di satu folder dan requirements terinstall.")
     sys.exit(1)
 
-# Step 2: All scenarios
-section("LANGKAH 2 — Demo 5 Skenario Pasar")
+section("Demo 5 Skenario Pasar")
 
 clf = w3.RiskRegimeClassifier()
 opt = w3.HRPOptimizer()
@@ -106,8 +89,7 @@ for sc in ["crisis","bearish","moderate","bullish","euphoria"]:
           f"{ww['Pasar Uang']*100:>9.1f}%  "
           f"{p_vol:>5.1f}%{marker}")
 
-# Step 3: Backtesting
-section("LANGKAH 3 — Hasil Backtesting")
+section("Hasil Backtesting")
 
 print("\n  Mensimulasikan portofolio D.A.R.A vs Buy-and-Hold IHSG (5 tahun)...")
 progress("  Menghitung regime rolling-60-hari")
@@ -180,7 +162,7 @@ except Exception as e:
     print(f"\n  ❌ Backtesting error: {e}")
 
 # Step 4: Server
-section("LANGKAH 4 — Menjalankan Server")
+section("Menjalankan Server")
 
 print("""
   Untuk menjalankan aplikasi lengkap:
@@ -199,7 +181,7 @@ print("""
 """)
 
 separator("═")
-print("  D.A.R.A — Siap untuk Demo Hackathon Dig Daya 2025")
+print("  D.A.R.A — Siap untuk Demo Hackathon Dig Daya 2026")
 print('  "Demokratisasi manajemen risiko institusional')
 print('   untuk 12,7 juta investor ritel Indonesia."')
 separator("═")

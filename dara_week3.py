@@ -1,7 +1,3 @@
-"""
-D.A.R.A - Dynamic Adaptive Risk Advisor
-dara_week3.py — Mesin Rekomendasi [PRODUCTION]
-"""
 import numpy as np
 import pandas as pd
 import warnings, os, json, logging, time
@@ -21,9 +17,6 @@ ASSET_COLORS = {
     "Pasar Uang": GOLD, "REIT": PURPLE, "Komoditas": ACCENT_2,
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DATA  — dara_week1 (live/sim 3 aset) + 2 aset simulasi berkorelasi
-# ─────────────────────────────────────────────────────────────────────────────
 LIVE_DATA       = False
 _IHSG_CVAR_95   = -0.0245
 _IHSG_CVAR_99   = -0.0395
@@ -63,10 +56,6 @@ except Exception as _e:
         _MU + (_sh @ _L.T) * _SG, columns=ASSET_NAMES,
         index=pd.bdate_range(end="2024-12-31", periods=_N))
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SINYAL INPUT
-# ─────────────────────────────────────────────────────────────────────────────
 def compute_garch_vol(returns, alpha=0.10, beta=0.85):
     r     = returns[-500:] if len(returns) > 500 else returns
     var   = float(np.var(r))
@@ -94,29 +83,18 @@ def compute_correlation_regime(df_ret, window=60):
     upper = corr[np.triu_indices(n, k=1)]
     return float(np.clip(np.mean(np.abs(upper)), 0, 1))
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SENTIMENT BRIDGE
-# ─────────────────────────────────────────────────────────────────────────────
 class SentimentBridge:
     CACHE_FILE = "sentiment_output_signal.json"
     CACHE_TTL  = 1800
 
     def get(self, scenario="moderate"):
-        """
-        Priority chain:
-          1. Cache JSON segar (< 30 menit) dari FinBERT atau demo_sentiment
-          2. Live FinBERT (ProsusAI/finbert via sentiment_analysis.py)
-          3. Live RSS + rule-based (demo_sentiment.py) — tanpa API key/torch
-          4. Fallback stub per skenario (offline)
-        """
         cached = self._load_cache()
         if cached:
             log.info("SentimentBridge: cache hit (source=%s)",
                      cached.get("source", "unknown"))
             return self._fmt(cached)
 
-        # Layer 2: FinBERT penuh
+        # FinBERT
         try:
             from sentiment_analysis import run_pipeline
             log.info("SentimentBridge: live FinBERT pipeline...")
@@ -126,25 +104,23 @@ class SentimentBridge:
         except Exception as exc:
             log.debug("FinBERT tidak tersedia (%s) — coba RSS fallback", exc)
 
-        # Layer 3: RSS + rule-based (gratis, tanpa torch)
+        # RSS + rule-based
         try:
             from demo_sentiment import get_live_headlines_for_dara
             log.info("SentimentBridge: RSS rule-based sentiment...")
             result = get_live_headlines_for_dara(scenario)
-            # Simpan ke cache supaya 30 menit berikutnya pakai cache
+
             if result.get("_signal"):
                 self._save_cache(result["_signal"])
             return result
         except Exception as exc:
             log.debug("RSS sentiment gagal (%s) — pakai stub", exc)
 
-        # Layer 4: stub
+        # stub
         log.info("SentimentBridge: stub fallback (scenario=%s)", scenario)
         return get_finbert_sentiment_stub(scenario)
 
     def refresh(self):
-        """Paksa refresh: coba FinBERT dulu, lalu RSS."""
-        # Coba FinBERT
         try:
             from sentiment_analysis import run_pipeline
             log.info("SentimentBridge.refresh: FinBERT pipeline...")
@@ -234,10 +210,7 @@ def get_finbert_sentiment_stub(scenario="moderate"):
     }
     return S.get(scenario, S["moderate"])
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# STAGE 1: REGIME CLASSIFIER
-# ─────────────────────────────────────────────────────────────────────────────
+# REGIME CLASSIFIER
 class RiskRegimeClassifier:
     WEIGHTS = {"garch": 0.35, "sentiment": 0.30, "momentum": 0.20, "correlation": 0.15}
     GUARDRAILS = {
@@ -279,10 +252,7 @@ class RiskRegimeClassifier:
             "color":      self.REGIME_COLORS[regime],
         }
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# STAGE 2: HRP OPTIMIZER
-# ─────────────────────────────────────────────────────────────────────────────
+# HRP OPTIMIZER
 class HRPOptimizer:
     def _cluster_var(self, cov, items):
         sub = cov[np.ix_(items, items)]
@@ -323,10 +293,7 @@ class HRPOptimizer:
         return {"weights": w, "cov": cov, "corr": corr,
                 "linkage": Z, "sorted": [assets[i] for i in order], "assets": assets}
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PIPELINE — dipanggil dara_server.py
-# ─────────────────────────────────────────────────────────────────────────────
+# PIPELINE - dara_server.py
 def run_pipeline(scenario="moderate", use_live_sentiment=True):
     clf = RiskRegimeClassifier()
     opt = HRPOptimizer()
@@ -352,7 +319,7 @@ def run_pipeline(scenario="moderate", use_live_sentiment=True):
     rc = {a: round(w_vec[i] * (cov @ w_vec)[i] / (p_var + 1e-12) * 100, 2)
           for i, a in enumerate(hr["assets"])}
 
-    # GARCH time-series untuk chart (252 hari terakhir)
+    # GARCH
     garch_series = (_GARCH_SERIES[-252:] if _GARCH_SERIES is not None
                     else [p_vol / np.sqrt(252)] * 252)
 
@@ -383,10 +350,7 @@ def run_pipeline(scenario="moderate", use_live_sentiment=True):
         "sentiment_signal": raw_signal,
     }
 
-
-# ─────────────────────────────────────────────────────────────────────────────
 # DEMO  — python dara_week3.py
-# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     DEMO = "bearish"
     print("=" * 65)

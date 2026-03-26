@@ -1,8 +1,3 @@
-/*
- * D.A.R.A — dara_week4.css
- * Stylesheet untuk UI Ritel Investor
- */
-
 :root {
   --brand:       #0B4F3A;
   --brand-light: #E4F2EC;
@@ -39,7 +34,6 @@ body {
   line-height: 1.6;
 }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width:6px; }
 ::-webkit-scrollbar-track { background:var(--bg); }
 ::-webkit-scrollbar-thumb { background:var(--text3); border-radius:3px; }
@@ -47,7 +41,6 @@ body {
 /* ── Layout ── */
 .app { max-width: 960px; margin: 0 auto; padding: 0 1.25rem 4rem; }
 
-/* ── Header ── */
 .header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1.25rem 0; border-bottom: 1px solid var(--border);
@@ -74,16 +67,13 @@ body {
 .conn-dot.err  { background:#E74C3C; }
 @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.2)} }
 
-/* ── Section title ── */
 .section-label {
   font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
   color:var(--text3); margin-bottom:1rem; display:flex; align-items:center; gap:8px;
 }
 .section-label::after { content:''; flex:1; height:1px; background:var(--border); }
 
-/* ══════════════════════════════════════
-   STEP 1 — PROFIL INVESTOR
-══════════════════════════════════════ */
+/* PROFIL INVESTOR */
 .profile-section { margin-bottom:2.5rem; }
 
 .profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -95,7 +85,6 @@ body {
 }
 .profile-card-title { font-size:13px; font-weight:600; color:var(--text2); margin-bottom:1rem; }
 
-/* Capital slider */
 .capital-display {
   font-family:'Playfair Display',serif;
   font-size:32px; font-weight:700; color:var(--brand);
@@ -118,7 +107,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 
 .slider-ticks { display:flex; justify-content:space-between; font-size:10px; color:var(--text3); margin-top:6px; }
 
-/* Goal cards */
 .goal-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .goal-card {
   border:1.5px solid var(--border); border-radius:var(--r-md);
@@ -132,9 +120,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .goal-name { font-size:12px; font-weight:600; color:var(--text2); }
 .goal-horizon { font-size:11px; color:var(--text3); }
 
-/* ══════════════════════════════════════
-   STEP 2 — WEATHER HERO
-══════════════════════════════════════ */
+/* WEATHER HERO */
 .weather-hero {
   border-radius:var(--r-xl); overflow:hidden;
   margin-bottom:2rem; position:relative;
@@ -147,7 +133,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
   transition:background .6s;
 }
 
-/* Weather ring animations */
 .weather-rings {
   position:absolute; right:-40px; top:50%; transform:translateY(-50%);
   width:320px; height:320px;
@@ -162,7 +147,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .ring-3 { width:240px; height:240px; }
 .ring-4 { width:300px; height:300px; }
 
-/* STORM */
 .weather-storm .weather-bg { background:linear-gradient(135deg,#1B2631 0%,#2C3E50 60%,#1A252F 100%); }
 .weather-storm .ring { border-color:rgba(93,173,226,.4); animation:stormRing 2s ease-in-out infinite; }
 .weather-storm .ring-1 { animation-delay:0s; }
@@ -171,7 +155,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .weather-storm .ring-4 { animation-delay:.9s; }
 @keyframes stormRing { 0%{opacity:0;transform:translate(-50%,-50%) scale(.8)} 50%{opacity:.8} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.2)} }
 
-/* CLOUDY */
 .weather-cloudy .weather-bg { background:linear-gradient(135deg,#5D6D7E 0%,#7F8C8D 60%,#4A5568 100%); }
 .weather-cloudy .ring { border-color:rgba(255,255,255,.25); animation:cloudRing 3.5s ease-in-out infinite; }
 .weather-cloudy .ring-1 { animation-delay:0s; }
@@ -180,7 +163,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .weather-cloudy .ring-4 { animation-delay:2.1s; }
 @keyframes cloudRing { 0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.9)} 50%{opacity:.5;transform:translate(-50%,-50%) scale(1.05)} }
 
-/* NEUTRAL */
 .weather-neutral .weather-bg { background:linear-gradient(135deg,#2D6A4F 0%,#40916C 60%,#1B4332 100%); }
 .weather-neutral .ring { border-color:rgba(255,255,255,.2); animation:neutralRing 4s ease-in-out infinite; }
 .weather-neutral .ring-1 { animation-delay:0s; }
@@ -189,7 +171,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .weather-neutral .ring-4 { animation-delay:3s; }
 @keyframes neutralRing { 0%,100%{opacity:0;transform:translate(-50%,-50%) scale(.95)} 50%{opacity:.4;transform:translate(-50%,-50%) scale(1.08)} }
 
-/* SUNNY */
 .weather-sunny .weather-bg { background:linear-gradient(135deg,#1A6B3A 0%,#2ECC71 60%,#0B4F3A 100%); }
 .weather-sunny .ring { border-color:rgba(254,231,21,.5); animation:sunnyRing 3s ease-in-out infinite; }
 .weather-sunny .ring-1 { animation-delay:0s; }
@@ -198,7 +179,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .weather-sunny .ring-4 { animation-delay:1.5s; }
 @keyframes sunnyRing { 0%{opacity:0;transform:translate(-50%,-50%) scale(.85)} 40%{opacity:.9} 100%{opacity:0;transform:translate(-50%,-50%) scale(1.25)} }
 
-/* OVERHEATED */
 .weather-overheated .weather-bg { background:linear-gradient(135deg,#7D3C98 0%,#A04000 60%,#6E2F2F 100%); }
 .weather-overheated .ring { border-color:rgba(255,165,0,.5); animation:heatRing 1.8s ease-in-out infinite; }
 .weather-overheated .ring-1 { animation-delay:0s; }
@@ -231,7 +211,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .weather-pill.danger { background:rgba(192,57,43,.5); border-color:rgba(231,76,60,.5); }
 .weather-pill.ok     { background:rgba(39,174,96,.5); border-color:rgba(46,204,113,.5); }
 
-/* Risk gauge */
 .risk-gauge-wrap {
   position:absolute; right:1.75rem; bottom:1.25rem; z-index:2;
   text-align:center;
@@ -239,12 +218,9 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .risk-gauge-label { font-size:10px; color:rgba(255,255,255,.7); letter-spacing:1px; text-transform:uppercase; margin-top:4px; }
 .risk-gauge-num   { font-size:22px; font-weight:700; color:#fff; font-family:'Playfair Display',serif; }
 
-/* ══════════════════════════════════════
-   STEP 3 — MAIN DUAL DASHBOARD
-══════════════════════════════════════ */
+/* MAIN DUAL DASHBOARD */
 .dual-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:16px; margin-bottom:2rem; }
 
-/* CVaR card */
 .cvar-card {
   background:var(--danger-bg); border:1.5px solid #F1948A;
   border-radius:var(--r-lg); padding:1.25rem 1.5rem;
@@ -270,7 +246,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .ai-advice-eyebrow { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--brand); margin-bottom:.6rem; }
 .ai-advice-text    { font-size:13px; color:var(--brand); line-height:1.6; font-weight:500; }
 
-/* Allocation card */
 .alloc-card {
   background:var(--surface); border:1px solid var(--border);
   border-radius:var(--r-lg); padding:1.25rem 1.5rem; box-shadow:var(--shadow);
@@ -291,9 +266,7 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .fund-type  { font-size:10px; color:var(--text3); }
 .fund-pct   { font-size:12px; font-weight:700; color:var(--text); }
 
-/* ══════════════════════════════════════
-   QUANT PANEL (Under the Hood)
-══════════════════════════════════════ */
+/* QUANT PANEL */
 .quant-toggle-btn {
   width:100%; padding:14px 20px;
   background:var(--surface); border:1.5px dashed var(--border);
@@ -329,14 +302,12 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
   padding:2px 7px; border-radius:4px; font-weight:600; letter-spacing:.5px;
 }
 
-/* Metrics table */
 .metrics-table { width:100%; border-collapse:collapse; font-size:12px; }
 .metrics-table td { padding:7px 0; border-bottom:1px solid var(--border); }
 .metrics-table td:last-child { text-align:right; font-weight:700; color:var(--text); }
 .metrics-table tr:last-child td { border-bottom:none; }
 .metric-label { color:var(--text3); }
 
-/* Signal bars */
 .signal-bars { display:flex; flex-direction:column; gap:10px; margin-top:.5rem; }
 .signal-bar-row { }
 .signal-bar-header { display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
@@ -345,7 +316,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .signal-bar-track { height:5px; background:var(--surface2); border-radius:3px; overflow:hidden; }
 .signal-bar-fill  { height:100%; border-radius:3px; transition:width .5s ease; }
 
-/* FinBERT sentiment */
 .finbert-row { display:flex; gap:4px; height:28px; border-radius:6px; overflow:hidden; margin:1rem 0 .5rem; }
 .finbert-pos { background:#2ECC71; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; transition:flex .5s; }
 .finbert-neu { background:#95A5A6; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; transition:flex .5s; }
@@ -354,12 +324,9 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .finbert-legend span { display:flex; align-items:center; gap:4px; }
 .fl-dot { width:8px; height:8px; border-radius:2px; }
 
-/* Chart containers */
 .chart-container { position:relative; height:160px; width:100%; }
 
-/* ══════════════════════════════════════
-   MISC
-══════════════════════════════════════ */
+/* MISC */
 .skeleton {
   background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);
   background-size:200% 100%; animation:shimmer 1.2s infinite; border-radius:4px;
@@ -386,7 +353,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 #tc-backtest, #tc-risk { display: none; }
 #tc-signals { display: block; }
 
-/* ── Impact Banner ── */
 .impact-banner { background:var(--brand); border-radius:var(--r-xl); padding:1.75rem 2rem; margin-bottom:1.75rem; display:flex; align-items:center; justify-content:space-between; gap:1.5rem; overflow:hidden; position:relative; }
 .impact-eyebrow { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,.6); margin-bottom:.4rem; }
 .impact-headline { font-family:'Lora',serif; font-size:20px; font-weight:700; color:#fff; line-height:1.25; margin-bottom:.5rem; }
@@ -396,7 +362,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .impact-num  { font-family:'Lora',serif; font-size:26px; font-weight:700; color:#fff; line-height:1; }
 .impact-lbl  { font-size:10px; color:rgba(255,255,255,.65); margin-top:3px; }
 
-/* ── Cards ── */
 .card       { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.25rem 1.5rem; box-shadow:var(--shadow); }
 .card-title { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:1rem; }
 .alloc-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.25rem 1.5rem; box-shadow:var(--shadow); }
@@ -405,12 +370,10 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .news-card-title { font-size:12px; font-weight:600; color:var(--text2); margin-bottom:.75rem; }
 .capital-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:1.25rem 1.5rem; margin-top:12px; box-shadow:var(--shadow); }
 
-/* ── Layout Grids ── */
 .profile-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:1.75rem; }
 .goal-grid   { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .dual-grid   { display:grid; grid-template-columns:1.05fr 1fr; gap:14px; margin-bottom:1.75rem; }
 
-/* ── Capital rows ── */
 .cap-row    { display:flex; align-items:center; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .cap-row:last-child { border-bottom:none; }
 .cap-asset  { display:flex; align-items:center; gap:7px; color:var(--text2); }
@@ -418,19 +381,12 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .cap-amount { font-weight:700; color:var(--text); }
 .cap-pct    { color:var(--text3); font-size:11px; margin-left:4px; }
 
-/* ── OJK Box ── */
-.ojk-box  { background:#EEF4FF; border:1px solid #A8C4F0; border-radius:var(--r-lg); padding:.9rem 1.25rem; margin-bottom:1.5rem; display:flex; align-items:flex-start; gap:10px; }
-.ojk-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
-.ojk-text { font-size:11px; color:#1A4A8A; line-height:1.6; }
-
-/* ── Quant Tabs ── */
 .qtabs       { display:flex; gap:4px; margin-bottom:1.25rem; background:var(--surface2); border-radius:var(--r-md); padding:4px; }
 .qtab        { flex:1; padding:7px 12px; font-size:12px; font-weight:600; border:none; border-radius:6px; cursor:pointer; background:transparent; color:var(--text3); font-family:var(--font); transition:all .15s; }
 .qtab.active { background:var(--surface); color:var(--text); box-shadow:var(--shadow); }
 .qtab-content        { display:none; }
 .qtab-content.active { display:block; }
 
-/* ── Backtest ── */
 .bt-summary    { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
 .bt-stat       { background:var(--surface2); border-radius:var(--r-md); padding:12px; text-align:center; }
 .bt-num        { font-family:'Lora',serif; font-size:22px; font-weight:700; line-height:1; margin-bottom:3px; }
@@ -438,7 +394,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .bt-note       { font-size:11px; color:var(--text3); font-style:italic; margin-top:.5rem; line-height:1.5; }
 .bt-chart-wrap { position:relative; height:200px; width:100%; margin-bottom:.75rem; }
 
-/* ── Responsive ── */
 @media(max-width:660px){
   .profile-grid,.dual-grid,.quant-grid,.bt-summary{ grid-template-columns:1fr; }
   .impact-stats{ gap:1rem; }
@@ -447,7 +402,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
   .w-rings     { display:none; }
 }
 
-/* ── Skeleton loading states ── */
 .sk-title    { height:36px; width:200px; margin-bottom:6px; }
 .sk-desc     { height:16px; width:90%; }
 .sk-advice   { height:60px; border-radius:6px; }
@@ -455,16 +409,6 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .sk-fund     { height:18px; margin:3px 0; }
 .sk-signal   { height:72px; }
 
-/* ── OJK Sandbox Pill (header) ── */
-.ojk-pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10px; font-weight: 600; color: #1A4A8A;
-  background: #EEF4FF; border: 1px solid #A8C4F0;
-  padding: 4px 10px; border-radius: 20px;
-  letter-spacing: .3px; text-transform: uppercase; margin-right: 4px;
-}
-
-/* ── Quant section inner spacing ── */
 .q-inner { margin-top: 1.25rem; }
 .q-inner + .q-inner { margin-top: 1.25rem; }
 .q-inner-sm { margin-top: 1rem; }
@@ -473,10 +417,8 @@ input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
 .mb-lg { margin-bottom: 1.5rem; }
 .mt-sm { margin-top: 1rem; }
 
-/* ── FinBERT legend dot ── */
 .fb-dot-pos { background: #2ECC71; }
 .fb-dot-neu { background: #9CA3AF; }
 .fb-dot-neg { background: #E74C3C; }
 
-/* ── Quant Tab content inner grids ── */
 .quant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }

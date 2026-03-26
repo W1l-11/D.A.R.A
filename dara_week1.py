@@ -1,26 +1,13 @@
-"""
-D.A.R.A — dara_week1.py  [PRODUCTION v3.1]
-============================================
-Fondasi Data & Mesin Risiko Klasik.
-
-Fix v3.1:
-  - GARCH parameter di-fit via MLE (bukan hardcoded)
-  - Semua print disupress saat diimpor (tidak ada noise di server log)
-  - Visualisasi hanya berjalan saat python dara_week1.py
-"""
-
 import sys, io, numpy as np, pandas as pd
 import warnings, os
 warnings.filterwarnings('ignore')
 
-# ── Mute semua output saat diimpor ────────────────────────────────────────────
 _IS_MAIN   = __name__ == "__main__"
 _MUTED_OUT = None
 if not _IS_MAIN:
     _MUTED_OUT = io.StringIO()
     sys.stdout = _MUTED_OUT
 
-# ── Warna (untuk visualisasi) ────────────────────────────────────────────────
 DARK_BG  = "#0D1117"; PANEL_BG = "#161B22"; ACCENT_1 = "#58A6FF"
 ACCENT_2 = "#F0883E"; ACCENT_3 = "#3FB950"; RED_RISK = "#FF7B72"
 GOLD     = "#D4AF37"; TEXT_PRI = "#E6EDF3"; TEXT_SEC = "#8B949E"
@@ -32,7 +19,6 @@ def get_output_path(filename):
     os.makedirs("outputs", exist_ok=True)
     return os.path.join("outputs", filename)
 
-# ── Crisis windows ────────────────────────────────────────────────────────────
 CRISIS_WINDOWS_SIM = [
     (200, 260, "COVID-19\nCrash"),
     (520, 560, "Rate Hike\nShock"),
@@ -46,7 +32,6 @@ CRISIS_WINDOWS_LIVE = [
     ("2024-07-31", "2024-08-05", "Yen Carry\nUnwind"),
 ]
 
-# ── Ticker map ────────────────────────────────────────────────────────────────
 TICKER_MAP = {
     "IHSG (Saham)":   "^JKSE",
     "Obligasi (SBN)": "^TNX",
@@ -57,9 +42,6 @@ ASSET_COLORS = {
 }
 ASSET_REGIME = {"IHSG (Saham)": 3.5, "Obligasi (SBN)": 1.8, "Pasar Uang": 0.6}
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STEP 1: DATA
-# ─────────────────────────────────────────────────────────────────────────────
 print("=" * 60)
 print("  D.A.R.A — Fondasi Data & Mesin Risiko Klasik")
 print("=" * 60)
@@ -115,23 +97,11 @@ if not LIVE_DATA:
 
 ASSETS_AVAILABLE = [c for c in TICKER_MAP if c in df_returns.columns]
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STEP 2: GARCH(1,1) — MLE FITTED
-# ─────────────────────────────────────────────────────────────────────────────
 print("\n[2/3] Fitting GARCH(1,1) via Maximum Likelihood Estimation...")
 
 from scipy.optimize import minimize
 
 def fit_garch_mle(returns: np.ndarray) -> tuple[np.ndarray, dict]:
-    """
-    GARCH(1,1): σ²_t = ω + α·ε²_{t-1} + β·σ²_{t-1}
-    Parameter α, β di-estimasi via MLE — bukan hardcoded.
-
-    Returns
-    -------
-    sigma      : np.ndarray — conditional volatility time-series
-    params     : dict dengan omega, alpha, beta, persistence, half_life
-    """
     def neg_log_likelihood(params):
         omega, alpha, beta = params
         if omega <= 0 or alpha <= 0 or beta <= 0 or alpha + beta >= 0.9999:
@@ -146,7 +116,6 @@ def fit_garch_mle(returns: np.ndarray) -> tuple[np.ndarray, dict]:
         return nll
 
     var_r = float(np.var(returns))
-    # Starting values: variance targeting
     x0     = [var_r * 0.05, 0.10, 0.85]
     bounds = [(1e-9, 0.1), (1e-5, 0.49), (1e-5, 0.9994)]
 
@@ -156,12 +125,10 @@ def fit_garch_mle(returns: np.ndarray) -> tuple[np.ndarray, dict]:
     if result.success and result.fun < neg_log_likelihood(x0):
         omega, alpha, beta = result.x
     else:
-        # Fallback: variance targeting dengan default alpha/beta
         alpha = 0.10
         beta  = 0.85
         omega = var_r * (1 - alpha - beta)
 
-    # Compute full sigma series
     n      = len(returns)
     sigma2 = np.zeros(n)
     sigma2[0] = var_r
@@ -192,9 +159,6 @@ for name in ASSETS_AVAILABLE:
     print(f"      ω={p['omega']:.2e}  α={p['alpha']:.4f}  β={p['beta']:.4f}  "
           f"Persistence={p['persistence']:.4f}  Half-life={p['half_life']:.1f}d")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# STEP 3: CVaR (Expected Shortfall)
-# ─────────────────────────────────────────────────────────────────────────────
 print("\n[3/3] Computing CVaR (Expected Shortfall)...")
 
 def compute_var_cvar(returns: np.ndarray, confidence_levels=(0.95, 0.99)) -> dict:
@@ -213,13 +177,10 @@ for name in ASSETS_AVAILABLE:
     m95, m99 = risk_metrics[name][0.95], risk_metrics[name][0.99]
     print(f"   ✓ {name}: CVaR95={m95['CVaR']*100:.3f}%  CVaR99={m99['CVaR']*100:.3f}%")
 
-# ── Restore stdout ─────────────────────────────────────────────────────────────
 if not _IS_MAIN and _MUTED_OUT is not None:
     sys.stdout = sys.__stdout__
 
-# ─────────────────────────────────────────────────────────────────────────────
-# VISUALISASI — hanya saat python dara_week1.py
-# ─────────────────────────────────────────────────────────────────────────────
+# VISUALISASI --> hanya saat run python dara_week1.py
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec

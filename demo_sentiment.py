@@ -1,16 +1,3 @@
-"""
-D.A.R.A — demo_sentiment.py
-============================
-Sentiment analisis ringan untuk demo tanpa perlu FinBERT/torch.
-Menggunakan Google Finance RSS + rule-based scoring.
-
-Dipakai oleh SentimentBridge sebagai fallback sebelum FinBERT:
-  Priority: FinBERT (full) → demo_sentiment (RSS) → stub (offline)
-
-Cara pakai standalone:
-  python demo_sentiment.py
-"""
-
 import os, json, re, time, logging
 from datetime import datetime
 from typing import Optional
@@ -19,7 +6,6 @@ import requests
 
 log = logging.getLogger(__name__)
 
-# ── Keyword scoring (bobot berdasarkan korelasi dari keyword_discovery) ─────────
 POSITIVE_KEYWORDS = {
     # Makro positif
     "growth": 0.8, "tumbuh": 0.8, "naik": 0.7, "rally": 0.9,
@@ -49,10 +35,6 @@ NEGATIVE_KEYWORDS = {
 
 
 def score_headline(text: str) -> float:
-    """
-    Rule-based sentiment score [-1, +1].
-    Menggunakan keyword-weighted scoring yang sudah divalidasi korelasi ke IHSG.
-    """
     text_lower = text.lower()
 
     pos_score = sum(w for kw, w in POSITIVE_KEYWORDS.items() if kw in text_lower)
@@ -63,19 +45,14 @@ def score_headline(text: str) -> float:
         return 0.0
 
     raw = (pos_score - neg_score) / total
-    # Scale ke [-1, +1] dengan sigmoid-like normalization
     return float(max(-1.0, min(1.0, raw * 1.5)))
 
 
 def fetch_rss_headlines(max_items: int = 15) -> list[dict]:
-    """
-    Ambil headline keuangan dari RSS feeds gratis.
-    Tidak butuh API key.
-    """
     feeds = [
-        # Reuters Business (reliable, gratis)
+        # Reuters Business
         "https://feeds.reuters.com/reuters/businessNews",
-        # Yahoo Finance Indonesia (jika tersedia)
+        # Yahoo Finance Indonesia
         "https://finance.yahoo.com/news/rss",
         # Investing.com Indonesia
         "https://id.investing.com/rss/news.rss",
@@ -92,7 +69,6 @@ def fetch_rss_headlines(max_items: int = 15) -> list[dict]:
             if r.status_code != 200:
                 continue
 
-            # Parse RSS sederhana tanpa library
             items = re.findall(r'<item>(.*?)</item>', r.text, re.DOTALL)
             for item in items[:max_items]:
                 title_match = re.search(r'<title><!\[CDATA\[(.*?)\]\]></title>', item)
@@ -119,15 +95,10 @@ def fetch_rss_headlines(max_items: int = 15) -> list[dict]:
 
 
 def run_demo_pipeline() -> dict:
-    """
-    Jalankan pipeline sentimen ringan.
-    Return: dict kompatibel dengan format sentiment_analysis.run_pipeline() output.
-    """
     headlines = fetch_rss_headlines(max_items=15)
 
     if not headlines:
         log.info("RSS tidak tersedia — pakai keyword-based demo headlines")
-        # Demo headlines yang mencerminkan kondisi pasar terkini
         demo_hl = [
             "Bank Indonesia holds rates steady amid global uncertainty",
             "IHSG extends gains as foreign inflows return to Indonesian markets",
@@ -145,7 +116,6 @@ def run_demo_pipeline() -> dict:
     pneu   = 1 - ppos - pneg
     fg     = (avg + 1) / 2   # fear_greed_index: 0 = extreme fear, 1 = extreme greed
 
-    # Tentukan fase dominan
     if avg > 0.2:
         phase = "BULL"
     elif avg < -0.2:
@@ -171,15 +141,11 @@ def run_demo_pipeline() -> dict:
         "pct_bear_phase":         round(pneg, 4),
         "dominant_market_phase":  phase,
         "top_headlines":          [h["title"] for h in top3],
-        "gmm_bic":                None,  # tidak dipakai di mode ini
+        "gmm_bic":                None,
     }
 
 
 def get_live_headlines_for_dara(scenario: Optional[str] = None) -> dict:
-    """
-    Public API untuk SentimentBridge.
-    Return: {"market": float, "headlines": [str, str, str], "_signal": dict}
-    """
     signal = run_demo_pipeline()
 
     score  = signal["avg_sentiment_score"]
@@ -189,12 +155,10 @@ def get_live_headlines_for_dara(scenario: Optional[str] = None) -> dict:
     pneg   = signal["pct_negative_news"]
     ppos   = signal["pct_positive_news"]
 
-    # Gunakan top headlines nyata
     real_hl = signal.get("top_headlines", [])
     if len(real_hl) >= 3:
         headlines = real_hl
     else:
-        # Fallback description jika headline tidak cukup
         if phase == "BEAR":
             headlines = [
                 f"Sentimen BEAR dari {total} artikel berita (RSS live)",
@@ -222,7 +186,6 @@ def get_live_headlines_for_dara(scenario: Optional[str] = None) -> dict:
 
 
 if __name__ == "__main__":
-    import sys
     print("=" * 60)
     print("  D.A.R.A — Demo Sentiment (RSS + Rule-based)")
     print("=" * 60)

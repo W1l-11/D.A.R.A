@@ -1,31 +1,11 @@
-/**
- * D.A.R.A — dara_week4.js  [FIXED]
- * Logic real-time, SSE, render, backtesting
- *
- * FIXES APPLIED:
- *  [F-01] err-banner → error-banner (null crash in connectSSE onopen/onerror + fetchDataPolling)
- *  [F-02] dot.className 'dot ...' → 'conn-dot ...' everywhere (CSS selectors need base class)
- *  [F-03] Removed first fetchData() definition (dead code — overridden by duplicate below)
- *  [F-04] switchTab() now uses style.display instead of classList.add('active')
- *         so it actually hides/shows panels (inline styles couldn't be overridden by class)
- *  [F-05] renderQuantPanel() now populates Risk-tab mirror IDs (#q-cvar95-r, #q-pvol-r, etc.)
- *  [F-06] Added buildRCChart() — rcChart canvas was never drawn
- *  [F-07] Removed dead _origSwitch capture (switchTab not yet defined at that point → always null)
- *  [F-08] fetchDataPolling() conn-dot class corrected to 'conn-dot live/err'
- *  [F-09] Removed dead updateStatusBar() (DOM elements it targets don't exist in HTML)
- */
-
-/* global Chart */
-
-// ── Config ────────────────────────────────────────────────────────────────────
 const API = "http://localhost:5000";
 
 const FUND_MAP = {
-  "IHSG (Saham)":    { name:"Reksa Dana Saham",           fund:"Schroder Dana Prestasi Plus",  color:"#2980B9" },
-  "Obligasi (SBN)":  { name:"RD Pendapatan Tetap",         fund:"Manulife Obligasi Negara",      color:"#27AE60" },
-  "Pasar Uang":      { name:"Reksa Dana Pasar Uang",       fund:"BNI-AM Dana Likuid",            color:"#E67E22" },
-  "REIT":            { name:"RD Properti / DIRE",           fund:"Reksa Dana Properti Syariah",   color:"#8E44AD" },
-  "Komoditas":       { name:"Reksa Dana Emas",              fund:"Manulife Emas Dinamis",         color:"#C0392B" },
+  "IHSG (Saham)":    { name:"Saham",                       fund:"IHSG Top 10 Market Cap",           color:"#2980B9" },
+  "Obligasi (SBN)":  { name:"RD Pendapatan Tetap",         fund:"Manulife Obligasi Negara",         color:"#27AE60" },
+  "Pasar Uang":      { name:"Reksa Dana Pasar Uang",       fund:"Sucorinvest Money Market Fund",    color:"#E67E22" },
+  "REIT":            { name:"Properti / DIRE",             fund:"Reksa Dana Properti Syariah",      color:"#8E44AD" },
+  "Komoditas":       { name:"Emas",                        fund:"Emas",                             color:"#C0392B" },
 };
 const ASSET_NAMES = Object.keys(FUND_MAP);
 const COLORS = ASSET_NAMES.map(a => FUND_MAP[a].color);
@@ -45,18 +25,16 @@ const SIGNAL_CONFIG = [
   { key:"correlation", label:"Diversifikasi",        weight:"15%", color:"#E67E22" },
 ];
 
-// ── State ─────────────────────────────────────────────────────────────────────
 let capital = 50_000_000;
 let currentGoal = "education";
 let currentData = null;
 let donutChart = null;
 let garchChart = null;
-let rcChart    = null;          // [F-06] was missing
+let rcChart    = null;
 let isOnline = false;
 let currentScenario = "moderate";
 let quantOpen = false;
 
-// ── Capital slider (logarithmic: 1jt – 1Milyar) ───────────────────────────────
 function sliderToCapital(v) {
   const logMin = Math.log10(1_000_000);
   const logMax = Math.log10(1_000_000_000);
@@ -80,7 +58,7 @@ function onCapitalChange(v) {
   if (currentData) renderCapitalData(currentData);
 }
 
-// ── Goal ──────────────────────────────────────────────────────────────────────
+// Goal
 const GOAL_SCENARIO = {
   emergency:  "bearish",
   education:  "moderate",
@@ -94,18 +72,12 @@ function setGoal(g) {
   if (goalEl) goalEl.classList.add("active");
   currentScenario = GOAL_SCENARIO[g];
 
-  // ── LANGKAH 1: Render FALLBACK seketika (0ms delay, pasti berbeda per goal) ──
   render(FALLBACK[currentScenario] || FALLBACK.moderate);
 
-  resetScenarioCache();  // reset backtest cache
-  // ── LANGKAH 2: Ambil data server yang scenario-specific ──────────────────────
-  // Pakai live=false agar sentinel stub dipakai → data PASTI berbeda tiap scenario
-  // Sinyal statis (GARCH, momentum, correlation) tetap dari server
+  resetScenarioCache();
   fetchScenarioData(currentScenario);
 }
 
-// ── Fetch data server untuk satu skenario (non-SSE, cepat, scenario-specific) ─
-// Reset backtest cache saat scenario berubah
 function resetScenarioCache() { _btData = null; }
 
 async function fetchScenarioData(scenario) {
@@ -118,7 +90,6 @@ async function fetchScenarioData(scenario) {
     const data = await r.json();
     if (data.error) throw new Error(data.error);
 
-    // Hanya render jika scenario belum berubah lagi selama request berlangsung
     if (data.scenario === currentScenario) {
       render(data);
       isOnline = true;
@@ -130,12 +101,11 @@ async function fetchScenarioData(scenario) {
       if (eb)  eb.style.display = "none";
     }
   } catch(e) {
-    // Fallback sudah ter-render di LANGKAH 1, tidak perlu action tambahan
     console.debug("fetchScenarioData fallback:", e.message);
   }
 }
 
-// ── Weather ───────────────────────────────────────────────────────────────────
+// Weather
 function getWeatherKey(regime, score) {
   if (regime === "DEFENSIVE" && score < 28) return "DEFENSIVE_LOW";
   if (regime === "DEFENSIVE")               return "DEFENSIVE";
@@ -158,7 +128,7 @@ function renderWeather(regime, score, pills) {
   ).join("");
 }
 
-// ── CVaR & capital breakdown ───────────────────────────────────────────────────
+// CVaR & capital breakdown
 function renderCapitalData(data) {
   if (!data) return;
   const pvol    = data.portfolio.vol / 100;
@@ -193,7 +163,6 @@ function renderCapitalData(data) {
   }).join("");
 }
 
-// ── Full render ───────────────────────────────────────────────────────────────
 function render(data) {
   currentData = data;
   const r = data.regime;
@@ -207,13 +176,11 @@ function render(data) {
   renderWeather(r.regime, r.score, pills);
   renderCapitalData(data);
 
-  // Advice
   const advEl = document.getElementById("advice-text");
   advEl.classList.remove("skeleton");
   advEl.style.height = advEl.style.width = "";
   advEl.textContent = data.advice;
 
-  // News
   document.getElementById("news-list").innerHTML = data.news.map(n => {
     const [bg, col] = n.badge === "NEG" ? ["#FDEAEA","#B03A2E"] :
                       n.badge === "POS" ? ["#E4F4EC","#1A6B3A"] :
@@ -225,7 +192,6 @@ function render(data) {
     </div>`;
   }).join("");
 
-  // Donut chart
   const alloc  = data.portfolio.alloc;
   const assets = data.portfolio.assets;
   document.getElementById("donut-vol").textContent = data.portfolio.vol.toFixed(1) + "%";
@@ -244,7 +210,6 @@ function render(data) {
     });
   }
 
-  // Fund list
   document.getElementById("fund-list").innerHTML = assets.map((a, i) => {
     const fi = FUND_MAP[a] || { name: a, fund: a, color: "#999" };
     return `<div class="fund-row">
@@ -259,14 +224,13 @@ function render(data) {
   renderQuantPanel(data);
 }
 
-// ── Quant panel ───────────────────────────────────────────────────────────────
+// Quant panel
 function renderQuantPanel(data) {
   const r  = data.regime;
   const ri = data.raw_inputs;
   const gp = data.garch_params || {};
   const cv = data.cvar || {};
 
-  // Signal bars
   const subs = r.sub_scores || {};
   document.getElementById("signal-bars").innerHTML = SIGNAL_CONFIG.map(s => {
     const score = subs[s.key] || 0;
@@ -281,7 +245,6 @@ function renderQuantPanel(data) {
     </div>`;
   }).join("");
 
-  // FinBERT bar
   const sentScore = ri.sentiment;
   const pos = Math.round(Math.max(0, sentScore) * 60 + 20);
   const neg = Math.round(Math.max(0, -sentScore) * 60 + 20);
@@ -293,7 +256,6 @@ function renderQuantPanel(data) {
   document.getElementById("fb-neg").style.flex = neg;
   document.getElementById("fb-neg").textContent = neg + "%";
 
-  // Signals-tab metrics
   document.getElementById("q-pvol").textContent      = data.portfolio.vol.toFixed(2) + "%/thn";
   document.getElementById("q-regime").textContent    = r.regime;
   document.getElementById("q-score").textContent     = r.score.toFixed(1) + " / 100";
@@ -305,17 +267,14 @@ function renderQuantPanel(data) {
   document.getElementById("q-cvar95").textContent    = cv.ihsg_cvar95_pct ? "-" + cv.ihsg_cvar95_pct.toFixed(3) + "%" : "—";
   document.getElementById("q-cvar99").textContent    = cv.ihsg_cvar99_pct ? "-" + cv.ihsg_cvar99_pct.toFixed(3) + "%" : "—";
 
-  // [F-05] Populate Risk-tab mirror IDs (were always showing "—" before)
   const setR = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   setR("q-cvar95-r", cv.ihsg_cvar95_pct ? "-" + cv.ihsg_cvar95_pct.toFixed(3) + "%" : "—");
   setR("q-cvar99-r", cv.ihsg_cvar99_pct ? "-" + cv.ihsg_cvar99_pct.toFixed(3) + "%" : "—");
   setR("q-pvol-r",   data.portfolio.vol.toFixed(2) + "%/thn");
   setR("q-persist-r", gp.persistence ? gp.persistence.toFixed(3) : "0.950");
 
-  // GARCH chart
   buildGarchChart(data.garch_series, data.portfolio.vol);
 
-  // [F-06] Risk-contribution chart (was never built)
   buildRCChart(data.portfolio.assets, data.portfolio.risk_contrib, COLORS);
 }
 
@@ -362,7 +321,6 @@ function buildGarchChart(garchSeries, portVol) {
   });
 }
 
-// [F-06] Risk Contribution chart — was completely absent
 function buildRCChart(assets, riskContrib, colors) {
   const ctx = document.getElementById("rcChart");
   if (!ctx) return;
@@ -400,7 +358,7 @@ function toggleQuant() {
   if (quantOpen) document.getElementById("quant-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-// ── API / Fallback ────────────────────────────────────────────────────────────
+// API / Fallback
 const FALLBACK = {
   crisis: {
     scenario:"crisis", timestamp:"Offline — Simulasi", source:"stub",
@@ -459,24 +417,20 @@ const FALLBACK = {
   },
 };
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 const slider = document.getElementById("capital-slider");
 slider.style.setProperty("--val", capitalToSlider(capital) + "%");
 slider.value = capitalToSlider(capital);
 
-// ── SSE Real-Time Connection ─────────────────────────────────────────────────
 let _evtSource      = null;
 let _reconnectTimer = null;
 let _reconnectDelay = 3000;
 
-// Initial load with education/moderate scenario
 connectSSE("moderate");
 
-// ── Backtesting ────────────────────────────────────────────────────────────────
+// Backtesting
 let _btData = null, _btChart = null;
 
 async function loadBacktest() {
-  // Cache per skenario — saat goal berubah, cache direset
   const cacheKey = currentScenario;
   if (_btData && _btData._scenario === cacheKey) { renderBacktest(_btData); return; }
   try {
@@ -535,8 +489,6 @@ function renderBacktest(d) {
   });
 }
 
-// [F-04] Fixed switchTab — uses style.display so inline-style tabs actually show/hide.
-// [F-07] Removed _origSwitch capture (was always null; switchTab not defined at capture time).
 function switchTab(tab) {
   ["signals", "backtest", "risk"].forEach(t => {
     const btn     = document.getElementById("tab-" + t);
@@ -547,7 +499,6 @@ function switchTab(tab) {
   if (tab === "backtest") loadBacktest();
 }
 
-// Auto-load backtest stats for impact banner
 setTimeout(() => {
   fetch(API + "/api/backtest", { signal: AbortSignal.timeout(5000) })
     .then(r => r.json()).then(d => {
@@ -575,7 +526,6 @@ function connectSSE(scenario) {
   const dot = document.getElementById("conn-dot");
   const lbl = document.getElementById("conn-label");
 
-  // [F-02] Use full 'conn-dot ...' class string to preserve base CSS class
   dot.className   = "conn-dot";
   lbl.textContent = "Menghubungkan...";
 
@@ -603,9 +553,8 @@ function connectSSE(scenario) {
       isOnline = true;
       _reconnectDelay = 3000;
       clearInterval(_msgTimer);
-      dot.className   = "conn-dot live";        // [F-02] fixed
+      dot.className   = "conn-dot live";
       lbl.textContent = "Live — Real-time";
-      // [F-01] was 'err-banner' (null crash) — correct ID is 'error-banner'
       document.getElementById("error-banner").style.display = "none";
     };
 
@@ -625,7 +574,6 @@ function connectSSE(scenario) {
       isOnline = false;
       dot.className   = "conn-dot err";         // [F-02] fixed
       lbl.textContent = "Terputus — mencoba kembali...";
-      // [F-01] correct ID
       document.getElementById("error-banner").style.display = "block";
       render(FALLBACK[currentScenario] || FALLBACK.moderate);
       _evtSource.close();
@@ -640,7 +588,6 @@ function connectSSE(scenario) {
   }
 }
 
-// ── Fallback: polling setiap 30 detik jika SSE tidak tersedia ─────────────────
 let _pollTimer = null;
 async function fetchDataPolling(scenario) {
   clearTimeout(_pollTimer);
@@ -650,24 +597,21 @@ async function fetchDataPolling(scenario) {
     const data = await r.json();
     if (data.error) throw new Error(data.error);
     isOnline = true;
-    // [F-02] conn-dot class fixed; [F-01] error-banner ID fixed
+
     document.getElementById("conn-dot").className   = "conn-dot live";
     document.getElementById("conn-label").textContent = "Live (polling) — " + data.timestamp;
     document.getElementById("error-banner").style.display = "none";
     render(data);
   } catch {
     isOnline = false;
-    document.getElementById("conn-dot").className   = "conn-dot err";  // [F-02]
+    document.getElementById("conn-dot").className   = "conn-dot err";
     document.getElementById("conn-label").textContent = "Offline — Simulasi";
-    document.getElementById("error-banner").style.display = "block";   // [F-01]
+    document.getElementById("error-banner").style.display = "block";
     render(FALLBACK[scenario] || FALLBACK.moderate);
   }
   _pollTimer = setTimeout(() => fetchDataPolling(currentScenario), 30000);
 }
 
-// [F-03] Removed duplicate fetchData() here.
-// The single entry point for scenario changes is connectSSE() called directly
-// from setGoal(), or fetchDataPolling() as the SSE fallback.
 async function fetchData(scenario) {
   currentScenario = scenario;
   connectSSE(scenario);

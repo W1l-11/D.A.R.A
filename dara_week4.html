@@ -12,7 +12,6 @@
 <body>
 <div class="app">
 
-  <!-- ── Header ── -->
   <header class="header">
     <div class="logo-mark">
       <div class="logo-icon">DA</div>
@@ -27,17 +26,15 @@
     </div>
   </header>
 
-  <!-- OJK Disclaimer -->
   <div class="ojk-box">
-    <span class="ojk-icon">&#128274;</span>
     <div class="ojk-text">
       <strong>Penting:</strong> D.A.R.A adalah alat bantu pengambilan keputusan (<em>decision-support tool</em>), bukan layanan investasi berlisensi OJK.
       Rekomendasi dihasilkan oleh algoritma AI dan <strong>bukan merupakan saran investasi resmi</strong>.
       Selalu konsultasikan keputusan investasi Anda dengan perencana keuangan berlisensi. Investasi mengandung risiko kehilangan modal.
     </div>
+    <br>
   </div>
 
-  <!-- Impact Banner -->
   <div class="impact-banner">
     <div>
       <div class="impact-eyebrow">Hackathon Dig Daya × Penguatan Ketahanan Keuangan</div>
@@ -60,12 +57,10 @@
     </div>
   </div>
 
-  <!-- [F-01] id was 'error-banner' in HTML but JS used 'err-banner' — kept correct ID here -->
   <div class="error-banner" id="error-banner">
     Server offline. Menampilkan data simulasi. Jalankan <code>python dara_server.py</code> untuk data live.
   </div>
 
-  <!-- ══ STEP 1: PROFIL INVESTOR ══ -->
   <div class="profile-section">
     <div class="section-label">Langkah 1 — Profil Investasi Anda</div>
     <div class="profile-grid">
@@ -81,7 +76,6 @@
         </div>
       </div>
 
-      <!-- Goal cards -->
       <div class="profile-card">
         <div class="profile-card-title">Apa tujuan investasi Anda?</div>
         <div class="goal-grid">
@@ -111,7 +105,6 @@
     </div>
   </div>
 
-  <!-- ══ STEP 2: CUACA PASAR ══ -->
   <div class="section-label">Langkah 2 — Cuaca Pasar Hari Ini</div>
   <div class="weather-hero weather-cloudy" id="weather-hero">
     <div class="weather-bg"></div>
@@ -134,11 +127,9 @@
     </div>
   </div>
 
-  <!-- ══ STEP 3: DASHBOARD RITEL ══ -->
   <div class="section-label">Langkah 3 — Rekomendasi untuk Anda</div>
   <div class="dual-grid">
 
-    <!-- Left: CVaR + Advice -->
     <div>
       <div class="cvar-card">
         <div class="cvar-eyebrow">⚠ Potensi Kerugian Maksimal</div>
@@ -160,7 +151,6 @@
         <div class="ai-advice-text skeleton" id="advice-text" style="height:60px;border-radius:6px">&nbsp;</div>
       </div>
 
-      <!-- Headlines -->
       <div style="margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem 1.5rem">
         <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:.75rem">Berita &amp; Sentimen Pasar</div>
         <div id="news-list">
@@ -171,7 +161,6 @@
       </div>
     </div>
 
-    <!-- Right: Allocation donut + fund list -->
     <div>
       <div class="alloc-card">
         <div class="alloc-title">Alokasi Reksa Dana yang Disarankan</div>
@@ -191,7 +180,6 @@
         </div>
       </div>
 
-      <!-- Capital breakdown -->
       <div style="margin-top:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem 1.5rem">
         <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:.75rem">Rincian Modal Anda</div>
         <div id="capital-breakdown">
@@ -204,7 +192,6 @@
 
   </div>
 
-  <!-- ══ QUANT PANEL — FOR JURY ══ -->
   <button class="quant-toggle-btn" onclick="toggleQuant()" id="quant-btn">
     <span>🔬</span>
     <span>Tampilkan Analisis Quant</span>
@@ -212,17 +199,6 @@
     <span id="quant-arrow">▼</span>
   </button>
 
-  <!--
-    FIXES APPLIED TO THIS BLOCK:
-    [F-04a] tc-backtest and tc-risk were OUTSIDE quant-panel div due to an extra stray </div>
-            after tc-signals. Removed the extra </div> — all 3 tab panels are now inside quant-panel.
-    [F-04b] Added class="qtab-content" to all 3 panels so switchTab() can find them.
-            switchTab() now uses style.display (not classList) to bypass inline-style specificity.
-    [F-04c] tc-signals starts visible (display:block); others start hidden (display:none).
-    [F-html-dup] Removed duplicate class="mb-lg" attribute on section-label div (was class="section-label" class="mb-lg").
-    [F-html-dup2] Removed duplicate class="mt-sm" on metrics-table (was class="metrics-table" class="mt-sm").
-    [F-html-dup3] Removed duplicate class="mb-sm" on quant-section-title inside q-inner.
-  -->
   <div class="quant-panel" id="quant-panel">
     <div class="qtabs">
       <button onclick="switchTab('signals')"  id="tab-signals"  class="qtab active">Sinyal &amp; Model</button>
@@ -230,13 +206,10 @@
       <button onclick="switchTab('risk')"     id="tab-risk"     class="qtab">Metrik Risiko</button>
     </div>
 
-    <!-- Tab: Sinyal & Model -->
     <div id="tc-signals" class="qtab-content" style="display:block">
-      <!-- [F-html-dup] Fixed: was <div class="section-label" class="mb-lg"> — duplicate attribute -->
       <div class="section-label mb-lg">Analisis Teknikal — Under the Hood</div>
       <div class="quant-grid">
 
-        <!-- GARCH chart -->
         <div>
           <div class="quant-section-title">
             Volatilitas GARCH(1,1) <span class="quant-tag">12 BULAN TERAKHIR</span>
@@ -244,7 +217,6 @@
           <div class="chart-container">
             <canvas id="garchChart"></canvas>
           </div>
-          <!-- [F-html-dup2] Fixed: was class="metrics-table" class="mt-sm" -->
           <table class="metrics-table mt-sm">
             <tr><td class="metric-label">Parameter α (ARCH)</td><td id="q-alpha">0.10</td></tr>
             <tr><td class="metric-label">Parameter β (GARCH)</td><td id="q-beta">0.85</td></tr>
@@ -255,7 +227,6 @@
           </table>
         </div>
 
-        <!-- FinBERT + Signals -->
         <div>
           <div class="quant-section-title">
             Sentimen FinBERT + GMM <span class="quant-tag">NLP ANALYSIS</span>
@@ -272,7 +243,6 @@
           </div>
 
           <div class="q-inner">
-            <!-- [F-html-dup3] Fixed: was class="quant-section-title" class="mb-sm" -->
             <div class="quant-section-title mb-sm">
               Sinyal Multi-Faktor <span class="quant-tag">BOBOT</span>
             </div>
@@ -295,10 +265,8 @@
         </div>
 
       </div>
-    </div><!-- /tc-signals -->
+    </div>
 
-    <!-- Tab: Backtesting Historis -->
-    <!-- [F-04a] Was outside quant-panel — now correctly inside -->
     <div id="tc-backtest" class="qtab-content" style="display:none">
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem">
         <div style="background:var(--surface2);border-radius:var(--r-md);padding:12px;text-align:center">
@@ -320,15 +288,12 @@
       <p style="font-size:11px;color:var(--text3);font-style:italic;line-height:1.5;margin-top:.5rem" id="bt-note2">
         Memuat data backtesting...
       </p>
-    </div><!-- /tc-backtest -->
+    </div>
 
-    <!-- Tab: Metrik Risiko -->
-    <!-- [F-04a] Was outside quant-panel — now correctly inside -->
     <div id="tc-risk" class="qtab-content" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:.9rem">CVaR &amp; Metrik Risiko</div>
-          <!-- [F-05] IDs now populated by renderQuantPanel() in dara_week4.js -->
           <table style="width:100%;border-collapse:collapse;font-size:12px" id="risk-tbl">
             <tr><td style="padding:7px 0;border-bottom:1px solid var(--border);color:var(--text3)">CVaR IHSG 95%</td>
                 <td style="text-align:right;font-weight:700" id="q-cvar95-r">—</td></tr>
@@ -344,15 +309,14 @@
         </div>
         <div>
           <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:.9rem">Kontribusi Risiko Portfolio</div>
-          <!-- [F-06] rcChart canvas — now drawn by buildRCChart() in dara_week4.js -->
           <div style="position:relative;height:155px;width:100%">
             <canvas id="rcChart"></canvas>
           </div>
         </div>
       </div>
-    </div><!-- /tc-risk -->
+    </div>
 
-  </div><!-- /quant-panel -->
+  </div>
 
   <div style="text-align:center;padding-top:1rem;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">
     D.A.R.A &mdash; Dynamic Adaptive Risk Advisor &copy; 2026 &nbsp;&bull;&nbsp;

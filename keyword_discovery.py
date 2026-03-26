@@ -1,18 +1,3 @@
-"""
-D.A.R.A — keyword_discovery.py  [PRODUCTION]
-=============================================
-Automatic Keyword Discovery untuk Pasar Indonesia.
-Dikonversi dari Google Colab ke standalone module.
-
-Cara pakai:
-  Standalone  : python keyword_discovery.py
-  Sebagai modul: from keyword_discovery import load_keywords, run_discovery
-
-Output:
-  query_keywords.json          -> dibaca sentiment_analysis.py
-  recommended_keywords.csv     -> detail korelasi
-"""
-
 import os, json, time, logging, warnings
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -89,10 +74,6 @@ def _save_keywords(keywords: list, output_dir: Path = OUTPUT_DIR):
 
 
 def load_keywords(path: str = "query_keywords.json") -> list:
-    """
-    Load keyword hasil discovery. Fallback ke default jika file belum ada.
-    Dipanggil oleh sentiment_analysis.py.
-    """
     try:
         with open(path) as f:
             kw = json.load(f)
@@ -128,7 +109,6 @@ def fetch_articles(api_key, query, start, end, page_size=100):
 
 
 def score_finbert(df):
-    """FinBERT scoring — fallback ke heuristic jika model tidak tersedia."""
     try:
         import torch
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -165,10 +145,6 @@ def score_finbert(df):
 
 
 def run_discovery(api_key=None, days_back=None, min_corr=None, output_dir=None) -> list:
-    """
-    Jalankan full keyword discovery pipeline.
-    Return: list[str] keyword yang berkorelasi dengan pasar.
-    """
     from sklearn.feature_extraction.text import TfidfVectorizer
 
     key  = api_key   or NEWS_API_KEY
@@ -184,7 +160,6 @@ def run_discovery(api_key=None, days_back=None, min_corr=None, output_dir=None) 
         log.warning("NEWS_API_KEY tidak ada — pakai keyword default")
         kw = _default_keywords(); _save_keywords(kw, od); return kw
 
-    # Fetch
     end, start = datetime.utcnow(), datetime.utcnow() - timedelta(days=days)
     all_arts, seen = [], set()
     for topic in SEED_TOPICS:
@@ -233,7 +208,6 @@ def run_discovery(api_key=None, days_back=None, min_corr=None, output_dir=None) 
     if not market_returns:
         kw = top_kw[:20]; _save_keywords(kw, od); return kw
 
-    # Tag & correlate
     tagged = []
     for _, row in news_df.iterrows():
         tl = row["full_text"].lower()

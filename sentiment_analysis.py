@@ -1,20 +1,3 @@
-"""
-=============================================================================
-  FINANCIAL NEWS SENTIMENT ANALYSIS  [FIXED]
-  FinBERT + Gaussian Mixture Model (Bull/Bear Phase Detection)
-  Output: Sentiment features for GARCH volatility prediction
-
-  FIXES APPLIED:
-    [F-SA1] QUERY_KEYWORDS now loaded dynamically from query_keywords.json
-            (produced by keyword_discovery.py) instead of a hardcoded static
-            list full of noise words like "far", "hit", "amid", "start", "east".
-            Falls back to a clean curated default list if the file is missing.
-    [F-SA2] GMM n_components guard: if fewer articles than n_components are
-            returned (e.g. demo / rate-limited), GMM is clamped to avoid
-            n_components > n_samples ValueError.
-=============================================================================
-"""
-
 import os
 import json
 import warnings
@@ -35,9 +18,6 @@ from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore")
 
-# ---------------------------------------------------------------------------
-# Logging setup
-# ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)-8s %(message)s",
@@ -47,13 +27,8 @@ log = logging.getLogger(__name__)
 
 load_dotenv(verbose=True)
 
-# ===========================================================================
-# CONFIG
-# ===========================================================================
 NEWS_API_KEY: str = os.getenv("NEWS_API_KEY", "")
 
-# [F-SA1] Load discovered keywords from query_keywords.json (output of keyword_discovery.py).
-# Falls back to a curated, noise-free default list when the file does not yet exist.
 _DEFAULT_KEYWORDS: list[str] = [
     "Bank Indonesia monetary policy interest rate",
     "Indonesia rupiah exchange rate",
@@ -79,10 +54,6 @@ _DEFAULT_KEYWORDS: list[str] = [
 
 
 def _load_query_keywords() -> list[str]:
-    """
-    Load keywords from query_keywords.json if it exists and is non-empty.
-    Falls back to _DEFAULT_KEYWORDS otherwise.
-    """
     kw_path = "query_keywords.json"
     try:
         with open(kw_path) as f:
@@ -98,23 +69,11 @@ def _load_query_keywords() -> list[str]:
 
 
 QUERY_KEYWORDS: list[str] = _load_query_keywords()
-
-# Number of articles to pull per keyword
 ARTICLES_PER_QUERY: int = 6
-
-# GMM: number of market phases (2 = bull/bear; 3 adds neutral)
 N_GMM_COMPONENTS: int = 2
-
-# Threshold for classifying an article as market-relevant
 RELEVANCE_SCORE_THRESHOLD: float = 0.55
-
-# Output CSV path
 OUTPUT_CSV: str = "sentiment_output.csv"
 
-
-# ===========================================================================
-# FALLBACK HEADLINES
-# ===========================================================================
 DEMO_HEADLINES: list[str] = [
     "Federal Reserve signals aggressive rate hikes to combat persistent inflation",
     "S&P 500 plunges 3% as recession fears grip Wall Street",
@@ -138,10 +97,7 @@ DEMO_HEADLINES: list[str] = [
     "Consumer spending unexpectedly drops, raising stagflation fears on Wall Street",
 ]
 
-
-# ===========================================================================
-# 1. NEWS FETCHER
-# ===========================================================================
+# NEWS FETCHER
 class NewsAPIFetcher:
     BASE_URL = "https://newsapi.org/v2/everything"
 
@@ -200,10 +156,7 @@ class NewsAPIFetcher:
                  "published_at": datetime.utcnow().isoformat(), "query": "demo"}
                 for h in DEMO_HEADLINES]
 
-
-# ===========================================================================
-# 2. FINBERT SENTIMENT ENGINE
-# ===========================================================================
+# FINBERT SENTIMENT ENGINE
 class FinBERTEngine:
     MODEL_NAME = "ProsusAI/finbert"
     LABEL_MAP  = {"positive": 1, "negative": -1, "neutral": 0}
@@ -257,10 +210,7 @@ class FinBERTEngine:
         log.info("FinBERT analysis complete for %d articles.", len(results))
         return results
 
-
-# ===========================================================================
-# 3. GAUSSIAN MIXTURE MODEL
-# ===========================================================================
+# GAUSSIAN MIXTURE MODEL
 class MarketPhaseGMM:
     def __init__(self, n_components: int = N_GMM_COMPONENTS):
         self.n_components = n_components
@@ -278,7 +228,6 @@ class MarketPhaseGMM:
     def fit_predict(self, df: pd.DataFrame) -> pd.DataFrame:
         X = self._feature_matrix(df)
 
-        # [F-SA2] Guard: n_components must not exceed n_samples
         n_comps = min(self.n_components, len(df))
         if n_comps != self.n_components:
             log.warning(
@@ -354,10 +303,7 @@ class MarketPhaseGMM:
             ), 2),
         }
 
-
-# ===========================================================================
-# 4. PRETTY REPORT
-# ===========================================================================
+# REPORT
 def print_report(df: pd.DataFrame, signal: dict) -> None:
     WIDTH = 72
     SEP   = "─" * WIDTH
@@ -405,15 +351,9 @@ def print_report(df: pd.DataFrame, signal: dict) -> None:
         print(f"     {k:<28}: {signal[k]}")
     print(f"\n{'═' * WIDTH}\n")
 
-
-# ===========================================================================
-# 5. MAIN PIPELINE
-# ===========================================================================
+# MAIN PIPELINE
 def run_pipeline() -> tuple[pd.DataFrame, dict]:
-    """End-to-end: NewsAPI → FinBERT → GMM → aggregate signal."""
     log.info("=== Starting Sentiment Analysis Pipeline ===")
-
-    # [F-SA1] Always reload keywords in case file was updated since import
     current_keywords = _load_query_keywords()
 
     fetcher  = NewsAPIFetcher(api_key=NEWS_API_KEY)
@@ -425,7 +365,6 @@ def run_pipeline() -> tuple[pd.DataFrame, dict]:
     enriched = engine.analyse(articles)
     df       = pd.DataFrame(enriched)
 
-    # [F-SA2] GMM with n_components guard inside fit_predict
     gmm    = MarketPhaseGMM(n_components=N_GMM_COMPONENTS)
     df     = gmm.fit_predict(df)
     signal = gmm.get_aggregate_signal(df)
@@ -446,10 +385,7 @@ def run_pipeline() -> tuple[pd.DataFrame, dict]:
 
     return df, signal
 
-
-# ===========================================================================
-# 6. REAL-TIME LOOP (optional)
-# ===========================================================================
+# REAL-TIME LOOP (optional)
 def run_realtime(interval_minutes: int = 15) -> None:
     import time
     log.info("Real-time mode: refreshing every %d minutes.", interval_minutes)

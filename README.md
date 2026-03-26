@@ -2,7 +2,7 @@
 
 > *"Demokratisasi manajemen risiko institusional untuk 12,7 juta investor ritel Indonesia."*
 
-**Hackathon Dig Daya × Penguatan Ketahanan dan Inovasi Keuangan 2025**
+**Hackathon Dig Daya × Penguatan Ketahanan dan Inovasi Keuangan 2026**
 Kategori: *Rekomendasi Produk Keuangan & Analisis Risiko*
 
 ---
@@ -174,13 +174,13 @@ python dara_server.py
 
 ## Roadmap Komersialisasi
 
-| Fase | Fitur | Target |
-|------|-------|--------|
+| Fase | Fitur | Target    |
+|------|-------|-----------|
 | **MVP** | Core engine + SSE real-time + backtesting OOS | ✅ Selesai |
-| **v1.1** | Integrasi NAV reksa dana live via OJK API | Q3 2025 |
-| **v1.2** | Notifikasi push WhatsApp/Telegram saat regime berubah | Q4 2025 |
-| **v2.0** | White-label SDK untuk platform sekuritas (BRI, Mandiri Investasi) | Q1 2026 |
-| **v3.0** | Personalisasi profil risiko OJK + machine learning on user behavior | 2026 |
+| **v1.1** | Integrasi NAV reksa dana live via OJK API | Q1 2026   |
+| **v1.2** | Notifikasi push WhatsApp/Telegram saat regime berubah | Q3 2026   |
+| **v2.0** | White-label SDK untuk platform sekuritas (BRI, Mandiri Investasi) | Q1 2027   |
+| **v3.0** | Personalisasi profil risiko OJK + machine learning on user behavior | 2027      |
 
 ---
 
@@ -192,4 +192,4 @@ keuangan digital. Investasi mengandung risiko kehilangan modal.
 
 ---
 
-*Hackathon Dig Daya 2025 — Penguatan Ketahanan dan Inovasi Keuangan*
+*Hackathon Dig Daya 2026*
