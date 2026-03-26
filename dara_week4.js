@@ -83,7 +83,7 @@ function resetScenarioCache() { _btData = null; }
 async function fetchScenarioData(scenario) {
   try {
     const r = await fetch(
-      `${API}/api/analyze?scenario=${scenario}&live=false`,
+      `${API}/api/analyze?scenario=${scenario}&live=true`,
       { signal: AbortSignal.timeout(5000) }
     );
     if (!r.ok) throw new Error("HTTP " + r.status);
